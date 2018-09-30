@@ -30,7 +30,6 @@ for i in range(len(test_generator)):
         correct = index_class_dict[np.argmax(labels[j])]
         preds = [index_class_dict[item] for item in np.argsort(predictions[j])[::-1]][:100]
         pred_val = predictions[j][np.argmax(labels[j])]
-        line = json.dumps({'label': str(correct), 'p': float(pred_val), 'predictions': preds.tolist()})
+        line = json.dumps({'label': str(correct), 'p': float(pred_val), 'predictions': preds})
         with open(os.path.join('predictions', correct + '.json'), 'a+') as f:
             f.write('{0}\n'.format(line))
-    break
