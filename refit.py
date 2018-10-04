@@ -12,8 +12,8 @@ image_size = 299
 batch_size = 100
 hidden_size = 1024
 n_freeze = 172
-train_dir = '/data/gmc/train'
-dev_dir = '/data/gmc/dev'
+train_dir = '/data/zap50k/train'
+dev_dir = '/data/zap50k/dev'
 
 def append_last_layer(base_model, n_classes):
     x = base_model.output
