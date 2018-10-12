@@ -11,7 +11,7 @@ import json
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_path', help='data directory, containg train/dev/test folders', type=str, required=True)
+parser.add_argument('--data_path', help='data directory, containing train/dev/test folders', type=str, required=True)
 parser.add_argument('--model_path', help='directory in which to store', type=str, required=True)
 parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
 parser.add_argument('--train', help='train for given max epochs', type=int, default=0)
@@ -73,21 +73,21 @@ def train():
 
 def predict():
     datagen = ImageDataGenerator(rescale=1/255.)
-    test_generator = datagen.flow_from_directory(test_dir, target_size=(image_size, image_size), batch_size=batch_size, shuffle=False)
+    gen = datagen.flow_from_directory(train_dir, target_size=(image_size, image_size), batch_size=batch_size, shuffle=False)
 
-    n_classes = len(test_generator.class_indices)
+    n_classes = len(gen.class_indices)
 
     base_model = InceptionV3(weights='imagenet', include_top=False)
     model = append_last_layer(base_model, n_classes)
     model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
     model.load_weights(weights_path)
 
-    index_class_dict = {k: v for v, k in test_generator.class_indices.items()}
-    filenames = test_generator.filenames
-    n = len(test_generator)
+    index_class_dict = {k: v for v, k in gen.class_indices.items()}
+    filenames = gen.filenames
+    n = len(gen)
     for i in range(n):
         print('{0} of {1}'.format(i+1, n), end='\r')
-        images, labels = test_generator[i]
+        images, labels = gen[i]
         predictions = model.predict(images, verbose=0)
         for j in range(len(labels)):
             correct = index_class_dict[np.argmax(labels[j])]
