@@ -89,12 +89,14 @@ def predict():
         print('{0} of {1}'.format(i+1, n), end='\r')
         images, labels = gen[i]
         predictions = model.predict(images, verbose=0)
-        for j in range(len(labels)):
-            correct = index_class_dict[np.argmax(labels[j])]
-            preds = [index_class_dict[item] for item in np.argsort(predictions[j])[::-1]][:100]
-            pred_val = predictions[j][np.argmax(labels[j])]
-            line = json.dumps({'label': str(correct), 'filename': filenames[batch_size * i + j], 'p': float(pred_val), 'predictions': preds})
-            with open(os.path.join(predictions_path, correct + '.json'), 'a+') as f:
+        for j in range(len(images)):
+            correct_label = index_class_dict[np.argmax(labels[j])]
+            top_prediction_labels = [index_class_dict[item] for item in np.argsort(predictions[j])[::-1]][:100]
+            pred_vals = {}
+            for label in list(gen.class_indices.keys()):
+                pred_vals[label] = float(predictions[j][gen.class_indices[label]])
+            line = json.dumps({'label': str(correct_label), 'filename': filenames[batch_size * i + j], 'p_vals': pred_vals, 'predictions': top_prediction_labels})
+            with open(os.path.join(predictions_path, correct_label + '.json'), 'a+') as f:
                 f.write('{0}\n'.format(line))
 
 if __name__ == '__main__':
