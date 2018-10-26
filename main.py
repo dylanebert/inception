@@ -10,30 +10,6 @@ from keras.optimizers import Adam
 import json
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_path', help='data directory, containing train/dev/test folders', type=str, required=True)
-parser.add_argument('--model_path', help='directory in which to store', type=str, required=True)
-parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
-parser.add_argument('--train', help='train for given max epochs', type=int, default=0)
-parser.add_argument('--predict', help='predict each label', action='store_true')
-parser.add_argument('--membership', help='determine class membership for each example', action='store_true')
-args = parser.parse_args()
-
-image_size = 299
-batch_size = 100
-hidden_size = args.hidden_size
-n_freeze = 172
-train_dir = os.path.join(args.data_path, 'train')
-dev_dir = os.path.join(args.data_path, 'dev')
-test_dir = os.path.join(args.data_path, 'test')
-weights_path = os.path.join(args.model_path, 'best.ckpt')
-overfit_path = os.path.join(args.model_path, 'overfit.ckpt')
-predictions_path = os.path.join(args.model_path, 'predictions')
-membership_path = os.path.join(args.model_path, 'membership')
-for membership_type in ['r1', 'r5', 'r10', 'r25', 'r50', 'p5', 'p75', 'p9']:
-    if not os.path.exists(os.path.join(membership_path, membership_type)):
-        os.makedirs(os.path.join(membership_path, membership_type))
-
 def append_last_layer(base_model, n_classes):
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
@@ -133,6 +109,31 @@ def membership():
                             f.write('{0}\n'.format(filenames[batch_size * i + j]))
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_path', help='data directory, containing train/dev/test folders', type=str, required=True)
+    parser.add_argument('--model_path', help='directory in which to store', type=str, required=True)
+    parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
+    parser.add_argument('--train', help='train for given max epochs', type=int, default=0)
+    parser.add_argument('--predict', help='generate predictions for given data', action='store_true')
+    parser.add_argument('--membership', help='determine class membership for each train example', action='store_true')
+    args = parser.parse_args()
+
+    image_size = 299
+    batch_size = 100
+    hidden_size = args.hidden_size
+    n_freeze = 172
+
+    train_dir = os.path.join(args.data_path, 'train')
+    dev_dir = os.path.join(args.data_path, 'dev')
+    test_dir = os.path.join(args.data_path, 'test')
+    weights_path = os.path.join(args.model_path, 'best.ckpt')
+    overfit_path = os.path.join(args.model_path, 'overfit.ckpt')
+    predictions_path = os.path.join(args.model_path, 'predictions')
+    membership_path = os.path.join(args.model_path, 'membership')
+    for membership_type in ['r1', 'r5', 'r10', 'r25', 'r50', 'p5', 'p75', 'p9']:
+        if not os.path.exists(os.path.join(membership_path, membership_type)):
+            os.makedirs(os.path.join(membership_path, membership_type))
+
     if args.train is not 0:
         train()
     if args.predict:
