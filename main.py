@@ -9,19 +9,20 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import Adam
 import json
 import argparse
+import pickle
 
 def append_last_layer(base_model, n_classes):
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(hidden_size, activation='relu')(x)
-    predictions = Dense(n_classes, activation='softmax')(x)
+    predictions = Dense(n_classes, activation='sigmoid')(x)
     model = Model(base_model.input, predictions)
     return model
 
 def transfer_learning(model, base_model):
     for layer in base_model.layers:
         layer.trainable = False
-    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['categorical_accuracy'])
 
 def fine_tuning(model):
     for layer in model.layers[:n_freeze]:
@@ -77,6 +78,44 @@ def predict():
             with open(os.path.join(predictions_path, correct_label + '.json'), 'a+') as f:
                 f.write('{0}\n'.format(line))
 
+def predict_verbose():
+    datagen = ImageDataGenerator(rescale=1/255.)
+    gen = datagen.flow_from_directory(train_dir, target_size=(image_size, image_size), batch_size=batch_size, shuffle=False)
+
+    n_classes = len(gen.class_indices)
+
+    base_model = InceptionV3(weights='imagenet', include_top=False)
+    model = append_last_layer(base_model, n_classes)
+    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.load_weights(weights_path)
+
+    index_class_dict = {k: v for v, k in gen.class_indices.items()}
+    with open(os.path.join(args.aux_path, 'index_class_dict.p'), 'wb+') as f:
+        pickle.dump(index_class_dict, f)
+    filenames = gen.filenames
+    n = len(gen)
+    current_class_predictions = {}
+    prev_label = None
+    for i in range(n):
+        print('{0} of {1}'.format(i+1, n), end='\r')
+        images, labels = gen[i]
+        predictions = model.predict(images, verbose=0)
+        for j in range(len(images)):
+            correct_label = index_class_dict[np.argmax(labels[j])]
+            prediction_vals = list(predictions[j])
+            if prev_label is None:
+                prev_label = correct_label
+            if correct_label is not prev_label:
+                path = os.path.join(args.aux_path, 'predictions', prev_label + '.p')
+                if os.path.exists(path):
+                    print('Error: {0} already exists'.format(path))
+                else:
+                    with open(path, 'wb+') as f:
+                        pickle.dump(current_class_predictions, f)
+                prev_label = correct_label
+                current_class_predictions = {}
+            current_class_predictions[filenames[batch_size * i + j]] = prediction_vals
+
 def membership():
     datagen = ImageDataGenerator(rescale=1/255.)
     gen = datagen.flow_from_directory(train_dir, target_size=(image_size, image_size), batch_size=batch_size, shuffle=False)
@@ -112,9 +151,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', help='data directory, containing train/dev/test folders', type=str, required=True)
     parser.add_argument('--model_path', help='directory in which to store', type=str, required=True)
+    parser.add_argument('--aux_path', help='auxiliary path for verbose data', type=str, default='/data/nlp/aux')
     parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
     parser.add_argument('--train', help='train for given max epochs', type=int, default=0)
     parser.add_argument('--predict', help='generate predictions for given data', action='store_true')
+    parser.add_argument('--predict_verbose', help='generate and save all prediction values to auxiliary path', action='store_true')
     parser.add_argument('--membership', help='determine class membership for each train example', action='store_true')
     args = parser.parse_args()
 
@@ -138,5 +179,7 @@ if __name__ == '__main__':
         train()
     if args.predict:
         predict()
+    if args.predict_verbose:
+        predict_verbose()
     if args.membership:
         membership()
