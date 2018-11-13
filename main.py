@@ -153,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', help='directory in which to store', type=str, required=True)
     parser.add_argument('--aux_path', help='auxiliary path for verbose data', type=str, default='/data/nlp/aux')
     parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
-    parser.add_argument('--train', help='train for given max epochs', type=int, default=0)
+    parser.add_argument('--train', help='train model', action='store_true')
     parser.add_argument('--predict', help='generate predictions for given data', action='store_true')
     parser.add_argument('--predict_verbose', help='generate and save all prediction values to auxiliary path', action='store_true')
     parser.add_argument('--membership', help='determine class membership for each train example', action='store_true')
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         if not os.path.exists(os.path.join(membership_path, membership_type)):
             os.makedirs(os.path.join(membership_path, membership_type))
 
-    if args.train is not 0:
+    if args.train:
         train()
     if args.predict:
         predict()
