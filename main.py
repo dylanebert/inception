@@ -22,14 +22,14 @@ def append_last_layer(base_model, n_classes):
 def transfer_learning(model, base_model):
     for layer in base_model.layers:
         layer.trainable = False
-    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['accuracy'])
 
 def fine_tuning(model):
     for layer in model.layers[:n_freeze]:
         layer.trainable = False
     for layer in model.layers[n_freeze:]:
         layer.trainable = True
-    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['accuracy'])
 
 def train():
     datagen = ImageDataGenerator(rescale=1/255.)
@@ -61,7 +61,7 @@ def predict():
 
     base_model = InceptionV3(weights='imagenet', include_top=False)
     model = append_last_layer(base_model, n_classes)
-    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['accuracy'])
     model.load_weights(weights_path)
 
     index_class_dict = {k: v for v, k in gen.class_indices.items()}
@@ -86,7 +86,7 @@ def predict_verbose():
 
     base_model = InceptionV3(weights='imagenet', include_top=False)
     model = append_last_layer(base_model, n_classes)
-    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['accuracy'])
     model.load_weights(weights_path)
 
     index_class_dict = {k: v for v, k in gen.class_indices.items()}
@@ -124,7 +124,7 @@ def membership():
 
     base_model = InceptionV3(weights='imagenet', include_top=False)
     model = append_last_layer(base_model, n_classes)
-    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+    model.compile(optimizer=Adam(lr=.0001), loss='binary_crossentropy', metrics=['accuracy'])
     model.load_weights(weights_path)
 
     index_class_dict = {k: v for v, k in gen.class_indices.items()}
