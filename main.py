@@ -10,6 +10,8 @@ from keras.optimizers import Adam
 import json
 import argparse
 import pickle
+import h5py
+from tqdm import tqdm
 
 def append_last_layer(base_model, n_classes):
     x = base_model.output
@@ -71,8 +73,7 @@ def predict():
     n = len(gen)
     current_class_predictions = {}
     prev_label = None
-    for i in range(n):
-        print('{0} of {1}'.format(i+1, n), end='\r')
+    for i in tqdm(range(n)):
         images, labels = gen[i]
         predictions = model.predict(images, verbose=0)
         for j in range(len(images)):
@@ -91,6 +92,23 @@ def predict():
                 current_class_predictions = {}
             current_class_predictions[filenames[batch_size * i + j]] = prediction_vals
 
+def encode():
+    datagen = ImageDataGenerator(rescale=1/255.)
+    gen = datagen.flow_from_directory(train_dir, target_size=(image_size, image_size), batch_size=batch_size, shuffle=False)
+
+    n_classes = len(gen.class_indices)
+
+    base_model = InceptionV3(weights='imagenet', include_top=False)
+    model = append_last_layer(base_model, n_classes)
+    model.load_weights(weights_path)
+
+    embedding_model = Model(inputs=model.input, outputs=model.layers[-2].output)
+    embeddings = embedding_model.predict_generator(gen, verbose=1)
+
+    with h5py.File(os.path.join(args.model_path, 'encodings.hdf5'), 'w') as f:
+        f.create_dataset('encodings', data=embeddings)
+        f.create_dataset('filenames', data=np.array(gen.filenames, dtype='S'))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', help='data directory, containing train/dev/test folders', type=str, required=True)
@@ -98,6 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_size', help='appended hidden layer size', type=int, default=300)
     parser.add_argument('--train', help='train model', action='store_true')
     parser.add_argument('--predict', help='generate and save all prediction values', action='store_true')
+    parser.add_argument('--encode', help='encode data to classifier embeddings', action='store_true')
     args = parser.parse_args()
 
     image_size = 299
@@ -116,3 +135,5 @@ if __name__ == '__main__':
         train()
     if args.predict:
         predict()
+    if args.encode:
+        encode()
